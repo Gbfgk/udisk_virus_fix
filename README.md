@@ -17,10 +17,10 @@ T1071.001：Application Layer Protocol → Abuse of VBS/PowerShell<br>
 ✅ 感染机制复原（基于描述）<br>
 感染前（正常）：<br>
 F:\（小A的优盘）<br>
-├── 工作\<br>
+├── 工作\ <br>
 │   ├── 报告.pptx<br>
 │   └── 视频.mp4<br>
-├── 学习\<br>
+├── 学习\ <br>
 │   └── 资料.pdf<br>
 └── [System Volume Information]<br>
 感染后（恶意）：<br>
@@ -32,8 +32,8 @@ F:\（小A的优盘）<br>
 │   └── u377573.dll<br>
 ├── 小A的优盘.lnk              ← 伪装快捷方式（图标=文件夹，目标=执行VBS）<br>
 ├── 小A的优盘\                 ← 原始文件被移入此同名文件夹（隐藏）<br>
-│   ├── 工作\<br>
-│   └── 学习\<br>
+│   ├── 工作\ <br>
+│   └── 学习\ <br>
 └── [System Volume Information]<br>
 💡 关键欺骗点：<br>
 
