@@ -2,8 +2,11 @@
 修复近期流行的U盘蠕虫病毒
 
 # 使用方法
-> **不要按他说的做**：此模块还未完成<br>
-大规模运行：在Powershell中执行：`powershell -Command "Invoke-WebRequest -Uri 'https://src.meteor.xin/'; Start-Process -FilePath '$env:TEMP\qqpcmgr.exe'"`
+下载所有文件 （code>download zip>解压）<br>
+修复U盘：管理员运行`fix_usb.bat`<br>
+修复系统：管理员运行`fix_system.bat`<br>
+重启电脑<br>
+文件名以内容为准
 
 # 开发背景
 [分析报告](https://s.threatbook.com/report/file/d54d4ea3a38755d91f2ee20800a3e48569863634b452d2da904139cf4c05cad5)<br>
