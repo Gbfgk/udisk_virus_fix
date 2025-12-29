@@ -1,49 +1,88 @@
 @echo off
-setlocal
+setlocal enabledelayedexpansion
 
 echo ===============================
-echo  系统挖矿木马修复工具 (CMD/VBS)
-echo  仅清除报告中确认的恶意文件
+echo  挖矿病毒修复工具 (svctrl64 + u######)
 echo ===============================
-echo.
 
 :: 日志
 set LOG=%~dp0system_fix.log
 echo [%date% %time%] 启动修复 >> "%LOG%"
 
-:: 步骤1: 清理 Defender 非法排除项（通过注册表）
-echo [1/3] 正在清理 Windows Defender 排除项...
-reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths" /v "C:\Windows\System32" /f 2>nul && (
-    echo   已移除排除项: C:\Windows\System32
-    echo [%date% %time%] 移除 Defender 排除项 >> "%LOG%"
-)
-reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths" /v "%USERPROFILE%\Desktop\sysvolume" /f 2>nul && (
-    echo   已移除排除项: Desktop\sysvolume
-    echo [%date% %time%] 移除 sysvolume 排除 >> "%LOG%"
+:: 必须管理员权限
+net session >nul 2>&1
+if %errorLevel% neq 0 (
+    echo [!] 错误：需要管理员权限！
+    echo      请右键选择“以管理员身份运行”。
+    pause
+    exit /b
 )
 
-:: 步骤2: 标记恶意 DLL 为重启删除
-echo [2/3] 正在标记恶意文件重启删除...
+:: 步骤1: 清理 Defender 排除项（注册表）
+echo [1/4] 清理 Defender 排除项...
+reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths" /v "C:\Windows\System32" /f >nul 2>&1 && (
+    echo   已移除: C:\Windows\System32
+)
+reg delete "HKLM\SOFTWARE\Microsoft\Windows Defender\Exclusions\Paths" /f >nul 2>&1
+
+:: 步骤2: 定位所有待删除文件
+set "TARGETS="
+:: 固定主载荷
+if exist "C:\Windows\System32\svctrl64.exe" set TARGETS=!TARGETS! "C:\Windows\System32\svctrl64.exe"
+
+:: 随机 u###### 文件（遍历所有匹配）
 for %%f in (
-    "C:\Windows\System32\u253774.dat"
-    "C:\Windows\System32\u377573.dll"
-    "C:\Windows\System32\u121373.bat"
-    "C:\Windows\System32\u889079.vbs"
+    "C:\Windows\System32\u*.dll"
+    "C:\Windows\System32\u*.dat"
+    "C:\Windows\System32\u*.bat"
+    "C:\Windows\System32\u*.vbs"
 ) do (
-    if exist %%f (
-        echo   标记删除: %%~nxf
-        cscript //nologo "%~dp0mark_delete.vbs" %%f
-        echo [%date% %time%] 标记 %%f >> "%LOG%"
+    set "name=%%~nf"
+    set "ext=%%~xf"
+    call :is_u6digit "!name!"
+    if !is_match! equ 1 (
+        set TARGETS=!TARGETS! "%%f"
     )
 )
 
-:: 步骤3: 运行系统文件检查（建议在重启前执行）
-echo [3/3] 建议运行系统文件检查（sfc /scannow）以确保系统完整性
-echo        请在重启后以管理员身份运行:
-echo        sfc /scannow
-echo        DISM /Online /Cleanup-Image /RestoreHealth
+:: 步骤3: 标记所有文件重启删除
+echo [2/4] 标记恶意文件重启删除...
+if defined TARGETS (
+    for %%f in (!TARGETS!) do (
+        echo   标记: %%~nxf
+        cscript //nologo "%~dp0mark_delete.vbs" %%f
+        echo [%date% %time%] 标记 %%f >> "%LOG%"
+    )
+) else (
+    echo   未发现恶意文件。
+)
 
-echo.
-echo [√] 修复操作已完成！
-echo     请**重启计算机**以彻底清除恶意文件。
+:: 步骤4: 清理持久化（计划任务、启动项）
+echo [3/4] 清理计划任务...
+schtasks /delete /tn "\Microsoft\svctrl" /f >nul 2>&1 && echo   已删除计划任务: svctrl
+
+echo [4/4] 建议操作:
+echo        - 重启计算机
+echo        - 重启后运行: sfc /scannow
+echo        - 检查任务管理器是否仍有 svctrl64.exe
+
 pause
+exit /b
+
+:: ========================
+:: 判断是否为 u + 6 位数字
+:: ========================
+:is_u6digit
+set "fname=%~1"
+set "is_match=0"
+if "!fname:~0,1!" neq "u" exit /b
+set "num=!fname:~1!"
+if "!num!" equ "" exit /b
+:: 检查是否为6位纯数字
+for /f "delims=0123456789" %%i in ("!num!") do (
+    exit /b  :: 包含非数字字符
+)
+if "!num:~6,1!" equ "" if not "!num!" equ "" (
+    if "!num:~0,6!" equ "!num!" set "is_match=1"
+)
+exit /b
